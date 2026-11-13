@@ -1,0 +1,124 @@
+<html>
+    <head>
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <style>
+            body
+            {
+                font-family: Arial, Helvetica, sans-serif;max-width: 800px;margin: 40px auto;
+            }
+            input,button
+            {
+                padding: 8px;margin: 5px 0;
+            }
+            table
+            {
+                width: 100px;border-collapse: collapse;margin-top: 20px;
+            }
+            table,th,td
+            {
+                border: 1px solid pink;padding: 8px;
+            }
+            button
+            {
+                cursor: pointer;
+            }
+            .hidden
+            {
+                display: none;
+            }
+        </style>
+    </head>
+    <body>
+        <h2>User Management</h2>
+        <form id="userform">
+            <input type="hidden" id="userid">
+            <input type="text" id="name" name="name" placeholder="Enter Name" required>
+            <input type="email" id="email" name="email" placeholder="Enter Email" required>
+            <button type="submit">Save USER</button>
+        </form>
+        <table border="3">
+            <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Action</th></tr></thead>
+            <tbody id="usertable"></tbody>
+        </table>
+        <br>
+        <button onclick="prevpage()">Previous</button><span id="pageinfo"></span>
+        <button onclick="nextpage()">Next</button>
+    </body>
+    <script>
+        let currentpage = 1;
+        const limit = 5;
+        function loadusers()
+        {    
+            //fetch users
+            fetch(`users.php?page=${currentpage}&limit=${limit}`)
+            .then(res=>res.json())
+            .then(data=>{
+                let table = document.getElementById("usertable");
+                table.innerHTML="";
+                data.data.forEach(u => {
+                    table.innerHTML+=`<tr><td>${u.id}</td><td>${u.name}</td><td>${u.email}</td>
+                        <td><button onclick="edituser(${u.id},'${u.name}','${u.email}')">Edit</button></td>
+                        <td><button onclick="deleteuser(${u.id})">Delete</button></td></tr>`;
+                });
+            document.getElementById("pageinfo").innerHTML=`PAGE ${data.page} OF ${data.totalpages}`;
+            });
+        }
+        loadusers();   
+        //create/update
+
+        document.getElementById("userform").addEventListener("submit",function(e){
+            e.preventDefault();
+            const id = document.getElementById("userid").value;
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+            const method = id ? "PUT" : "POST";
+
+            fetch("users.php",{method:method,headers:{"content-type":"Application/json"},
+                body:JSON.stringify({id,name,email})})
+            .then(res=>res.json())
+            .then(data=>{
+                alert(data.msg);
+                alert(data.id);
+                resetform();
+                loadusers();
+            });
+        });
+
+        function edituser(id,name,email)
+        {
+            document.getElementById("userid").value=id;
+            document.getElementById("name").value=name;
+            document.getElementById("email").value=email;
+        }
+        function deleteuser(id)
+        {
+            if(!confirm("ARE YOU SURE?")) return;
+            fetch("users.php",{method:"DELETE",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({id})})
+            .then(res=>res.json())
+            .then(data=>{
+                alert(data.msg);
+                loadusers();
+            })
+        }
+        function nextpage()
+        {
+            currentpage++;
+            loadusers();
+        }
+        function prevpage()
+        {
+            if(currentpage>1)
+            {
+                currentpage--;
+                loadusers();
+            }
+        }
+        function resetform()
+        {
+            document.getElementById("userid").value="";
+            document.getElementById("name").value="";
+            document.getElementById("email").value="";
+        }
+    </script>
+</html>
